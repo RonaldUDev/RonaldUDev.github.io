@@ -893,8 +893,10 @@ function renderTablaReportes(data) {
 
   tbody.innerHTML = data.map(r => {
     const tl = calcularTiempoLaboral(r.horaEntrada, r.horaSalida);
-    const mapE = r.latEntrada ? `<a href="https://maps.google.com/maps?q=${r.latEntrada},${r.lngEntrada}" target="_blank" style="color:var(--accent);font-size:11px;">🗺 Ver</a>` : '—';
-    const mapS = r.latSalida  ? `<a href="https://maps.google.com/maps?q=${r.latSalida},${r.lngSalida}" target="_blank" style="color:var(--accent);font-size:11px;">🗺 Ver</a>` : '—';
+    const urlE = r.mapsUrlEntrada || (r.latEntrada ? `https://www.google.com/maps?q=${r.latEntrada},${r.lngEntrada}` : '');
+    const urlS = r.mapsUrlSalida  || (r.latSalida  ? `https://www.google.com/maps?q=${r.latSalida},${r.lngSalida}`   : '');
+    const mapE = urlE ? `<a href="${urlE}" target="_blank" style="color:var(--accent);font-size:11px;">🗺 Ver</a>` : '—';
+    const mapS = urlS ? `<a href="${urlS}" target="_blank" style="color:var(--accent);font-size:11px;">🗺 Ver</a>` : '—';
 
     return `
       <tr data-search="${(r.nombre+r.usuario+r.departamento).toLowerCase()}">
