@@ -383,6 +383,97 @@
   .btn .btn-icon { font-size: 22px; }
   .btn .btn-text { font-size: 13px; }
 
+  /* Botón ya registrado */
+  .btn.registrado {
+    opacity: 1 !important;
+    cursor: not-allowed !important;
+    background: var(--surface2) !important;
+    box-shadow: none !important;
+    border: 2px solid var(--border) !important;
+    color: var(--muted) !important;
+    transform: none !important;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn.registrado::after {
+    content: '✓';
+    position: absolute;
+    top: 6px;
+    right: 10px;
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .btn-label-registered {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+
+  /* Modal jornada */
+  .jornada-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(20,13,30,0.88);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(6px);
+    animation: fadeIn 0.2s ease;
+  }
+  .jornada-modal-overlay.hidden { display: none; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .jornada-modal-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 32px 24px;
+    max-width: 340px;
+    width: 100%;
+    text-align: center;
+    position: relative;
+    animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+
+  .jornada-modal-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 18px; right: 18px;
+    height: 2px;
+    border-radius: 24px 24px 0 0;
+  }
+  .jornada-modal-card.entrada-bloq::before { background: linear-gradient(90deg, #059669, var(--accent)); }
+  .jornada-modal-card.salida-bloq::before  { background: linear-gradient(90deg, #dc2626, #e05c6e); }
+  .jornada-modal-card.jornada-completa::before { background: linear-gradient(90deg, var(--accent2), var(--accent)); }
+
+  .jornada-modal-icon { font-size: 52px; margin-bottom: 14px; display: block; }
+  .jornada-modal-title { font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 8px; line-height: 1.3; }
+  .jornada-modal-desc  { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 6px; }
+  .jornada-modal-time  { display: inline-block; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; color: var(--accent); margin: 10px 0 20px; font-family: 'Space Mono', monospace; }
+
+  .btn-modal-close {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-family: 'Sora', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 6px 20px rgba(164,110,172,0.25);
+  }
+  .btn-modal-close:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(164,110,172,0.35); }
+  .btn-modal-close:active { transform: none; }
+
   /* Status */
   .status-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px 20px; display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
   .status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
@@ -554,6 +645,17 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- Modal: Jornada ya registrada -->
+<div class="jornada-modal-overlay hidden" id="jornada-modal">
+  <div class="jornada-modal-card" id="jornada-modal-card">
+    <span class="jornada-modal-icon" id="jornada-modal-icon">✅</span>
+    <div class="jornada-modal-title" id="jornada-modal-title">Ya registraste tu Entrada</div>
+    <div class="jornada-modal-desc" id="jornada-modal-desc">Tu entrada del día ya fue confirmada en el sistema.</div>
+    <span class="jornada-modal-time" id="jornada-modal-time"></span>
+    <button class="btn-modal-close" onclick="cerrarJornadaModal()">Entendido</button>
+  </div>
+</div>
+
 <script>
 // ━━━ CONFIG ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyHXVxy7a4zO2mEKT4XptXndt8Wud1mryXsfGLC1xgS5DQDGzXjjdWE8w4sv67hjyoW/exec';
@@ -568,6 +670,10 @@ const _hoy = new Date();
 const _fechaISO = _hoy.getFullYear() + '-' + String(_hoy.getMonth()+1).padStart(2,'0') + '-' + String(_hoy.getDate()).padStart(2,'0');
 const STORAGE_KEY = 'attendance_records_' + _fechaISO;
 let gpsPermissionGranted = localStorage.getItem('gps_permission') === 'granted';
+
+// ━━━ CONTROL JORNADA LABORAL ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let jornadaEntradaRegistrada = false;
+let jornadaSalidaRegistrada  = false;
 
 // ━━━ INIT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function init() {
@@ -670,6 +776,16 @@ function updateClock() {
 
 // ━━━ REGISTRAR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function registrar(tipo) {
+  // Verificar jornada laboral
+  if (tipo === 'ENTRADA' && jornadaEntradaRegistrada) {
+    mostrarJornadaModal('entrada');
+    return;
+  }
+  if (tipo === 'SALIDA' && jornadaSalidaRegistrada) {
+    mostrarJornadaModal('salida');
+    return;
+  }
+
   if (!gpsData) {
     showStatus('error', '📡 Activa el GPS para continuar');
     // Mostrar overlay de GPS nuevamente
@@ -720,6 +836,7 @@ async function registrar(tipo) {
     if (data.status === 'success') {
       addRecord(payload);
       saveLocal(payload);
+      marcarJornadaRegistrada(tipo);
       showStatus('success', `✅ ${tipo} registrada correctamente`);
       showToast(`✅ ${tipo} registrada — ${payload.hora}`, 'success');
     } else {
@@ -729,6 +846,7 @@ async function registrar(tipo) {
   } catch (err) {
     addRecord({ ...payload, offline: true });
     saveLocal({ ...payload, offline: true });
+    marcarJornadaRegistrada(tipo);
     showStatus('error', '⚠️ Sin conexión. Guardado localmente.');
     showToast('⚠️ Sin conexión. Registro guardado.', 'error');
   }
@@ -757,8 +875,93 @@ function showToast(msg, type = 'success') {
 }
 
 function setButtons(enabled) {
-  document.getElementById('btn-entrada').disabled = !enabled;
-  document.getElementById('btn-salida').disabled  = !enabled;
+  // Solo habilita si la jornada no está ya marcada
+  if (enabled) {
+    if (!jornadaEntradaRegistrada) {
+      document.getElementById('btn-entrada').disabled = false;
+    }
+    if (!jornadaSalidaRegistrada) {
+      document.getElementById('btn-salida').disabled  = false;
+    }
+  } else {
+    document.getElementById('btn-entrada').disabled = true;
+    document.getElementById('btn-salida').disabled  = true;
+  }
+}
+
+function marcarJornadaRegistrada(tipo) {
+  const horaActual = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  if (tipo === 'ENTRADA') {
+    jornadaEntradaRegistrada = true;
+    const btn = document.getElementById('btn-entrada');
+    btn.disabled = false; // habilitar para que se vea el estilo
+    btn.classList.add('registrado');
+    btn.querySelector('.btn-text').textContent = 'Registrada';
+    // Añadir etiqueta de hora si no existe
+    if (!btn.querySelector('.btn-label-registered')) {
+      const label = document.createElement('span');
+      label.className = 'btn-label-registered';
+      label.textContent = horaActual;
+      btn.appendChild(label);
+    }
+  } else {
+    jornadaSalidaRegistrada = true;
+    const btn = document.getElementById('btn-salida');
+    btn.disabled = false;
+    btn.classList.add('registrado');
+    btn.querySelector('.btn-text').textContent = 'Registrada';
+    if (!btn.querySelector('.btn-label-registered')) {
+      const label = document.createElement('span');
+      label.className = 'btn-label-registered';
+      label.textContent = horaActual;
+      btn.appendChild(label);
+    }
+  }
+  // Si ambos registrados, mostrar estado de jornada completa
+  if (jornadaEntradaRegistrada && jornadaSalidaRegistrada) {
+    showStatus('success', '🎉 Jornada laboral completa');
+  }
+}
+
+// ━━━ MODAL JORNADA ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function mostrarJornadaModal(tipo) {
+  const overlay = document.getElementById('jornada-modal');
+  const card    = document.getElementById('jornada-modal-card');
+  const icon    = document.getElementById('jornada-modal-icon');
+  const title   = document.getElementById('jornada-modal-title');
+  const desc    = document.getElementById('jornada-modal-desc');
+  const time    = document.getElementById('jornada-modal-time');
+
+  // Buscar hora registrada en records
+  const horaRegistrada = records.find(r => r.tipo === tipo.toUpperCase())?.hora || '';
+
+  card.className = 'jornada-modal-card';
+
+  if (tipo === 'entrada') {
+    card.classList.add('entrada-bloq');
+    icon.textContent  = '✅';
+    title.textContent = 'Entrada ya registrada';
+    desc.textContent  = 'Tu entrada de hoy ya fue confirmada en el sistema. Solo se permite un registro de entrada por jornada laboral.';
+    time.textContent  = horaRegistrada ? `Registrada a las ${horaRegistrada}` : 'Registrada hoy';
+  } else if (tipo === 'salida' && jornadaEntradaRegistrada && jornadaSalidaRegistrada) {
+    card.classList.add('jornada-completa');
+    icon.textContent  = '🏆';
+    title.textContent = 'Jornada Laboral Completa';
+    desc.textContent  = 'Has completado tu jornada laboral del día. Tanto tu entrada como tu salida ya están registradas en el sistema.';
+    time.textContent  = '✓ Entrada y Salida registradas';
+  } else {
+    card.classList.add('salida-bloq');
+    icon.textContent  = '🚪';
+    title.textContent = 'Salida ya registrada';
+    desc.textContent  = 'Tu salida de hoy ya fue confirmada en el sistema. Solo se permite un registro de salida por jornada laboral.';
+    time.textContent  = horaRegistrada ? `Registrada a las ${horaRegistrada}` : 'Registrada hoy';
+  }
+
+  overlay.classList.remove('hidden');
+}
+
+function cerrarJornadaModal() {
+  document.getElementById('jornada-modal').classList.add('hidden');
 }
 
 function addRecord(r) {
@@ -829,6 +1032,7 @@ async function cargarRegistrosDeHoy() {
             timestamp: reg.fechaEntrada + 'T' + reg.horaEntrada
           };
           addRecord(r);
+          jornadaEntradaRegistrada = true;
         }
         if (reg.horaSalida) {
           const r = {
@@ -841,8 +1045,13 @@ async function cargarRegistrosDeHoy() {
             timestamp: reg.fechaSalida + 'T' + reg.horaSalida
           };
           addRecord(r);
+          jornadaSalidaRegistrada = true;
         }
       });
+
+      // Actualizar estado visual de botones según jornada cargada
+      if (jornadaEntradaRegistrada) marcarJornadaRegistrada('ENTRADA');
+      if (jornadaSalidaRegistrada)  marcarJornadaRegistrada('SALIDA');
 
     } else {
       throw new Error('Sin datos');
@@ -858,6 +1067,11 @@ async function cargarRegistrosDeHoy() {
         lista.innerHTML = '<div class="empty-state">📋 Aún no hay registros hoy.</div>';
       } else {
         saved.reverse().forEach(r => addRecord(r));
+        // Detectar jornada desde localStorage
+        const tieneEntrada = saved.some(r => r.tipo === 'ENTRADA');
+        const tieneSalida  = saved.some(r => r.tipo === 'SALIDA');
+        if (tieneEntrada) { jornadaEntradaRegistrada = true; marcarJornadaRegistrada('ENTRADA'); }
+        if (tieneSalida)  { jornadaSalidaRegistrada  = true; marcarJornadaRegistrada('SALIDA'); }
       }
     } catch(e2) {
       lista.innerHTML = '<div class="empty-state">📋 Aún no hay registros hoy.</div>';
